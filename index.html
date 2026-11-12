@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="ReFocus / EM-QnF 数据、标注、benchmark、leaderboard 与 pipeline 解读。" />
+  <title>ReFocus / EM-QnF 研究速览</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="返回首页"><span class="brand-mark">R</span><span>ReFocus / EM-QnF</span></a>
+    <nav aria-label="页面导航">
+      <a href="#video">视频</a><a href="#annotation">标注</a><a href="#benchmark">Benchmark</a><a href="#pipeline">Pipeline</a>
+    </nav>
+    <a class="source-link" href="https://nsubedi11.github.io/refocus/" target="_blank" rel="noreferrer">原项目页 <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main id="top">
+    <section class="hero reveal">
+      <div class="hero-copy">
+        <p class="eyebrow">CVPR 2026 · 数据与评测拆解</p>
+        <h1>让模型在长视频里<br /><em>重新找到正确的那一刻。</em></h1>
+        <p class="hero-lede">这不是普通的视频问答，而是一个允许用户纠正模型的交互式时间定位任务：问题、错误预测、反馈和真实片段共同组成 EM-QnF。</p>
+        <div class="hero-actions"><a class="button primary" href="#pipeline">查看完整流程</a><a class="button ghost" href="https://github.com/nsubedi11/CVPR26_ReFocus" target="_blank" rel="noreferrer">打开 GitHub <span>↗</span></a></div>
+      </div>
+      <div class="hero-visual" aria-label="交互式时间定位示意图">
+        <div class="visual-label">INTERACTIVE TEMPORAL GROUNDING</div>
+        <div class="timeline-shell"><div class="timeline-head"><span>video_egocentric_01</span><span>08:00</span></div><div class="timeline"><span class="tick t1"></span><span class="tick t2"></span><span class="tick t3"></span><span class="tick t4"></span><span class="range wrong">错误预测</span><span class="range right">真实片段</span><span class="playhead"></span></div><div class="timeline-foot"><span>0:00</span><span>4:00</span><span>8:00</span></div></div>
+        <div class="feedback-card"><span class="feedback-dot"></span><div><strong>用户反馈</strong><p>“请看前面。我要找的是蓝色大杯子。”</p></div><span class="arrow">→</span></div>
+        <div class="visual-caption">反馈改变模型对每个 clip 的关注权重</div>
+      </div>
+    </section>
+
+    <section class="signal-row reveal" aria-label="关键事实"><div><strong>3</strong><span>来源 benchmark</span></div><div><strong>JSONL</strong><span>反馈标注格式</span></div><div><strong>R@K / IoU</strong><span>核心评测指标</span></div><div><strong>无公开榜单</strong><span>当前项目状态</span></div></section>
+
+    <section class="section split reveal" id="video"><div class="section-intro"><p class="eyebrow">01 · VIDEO</p><h2>视频是什么样？</h2><p>模型面对的是来自可穿戴摄像头的第一视角、连续生活记录。用户不是问“这段视频是什么类别”，而是要找出一个事件在长视频中的确切时间窗口。</p></div><div class="content-stack"><div class="scene-card"><div class="scene-strip"><span class="scene active">KITCHEN</span><span class="scene">LIVING ROOM</span><span class="scene">BEDROOM</span></div><div class="scene-image"><div class="frame-corner tl"></div><div class="frame-corner br"></div><div class="object mug"></div><div class="object table"></div><div class="object hand"></div><span class="timestamp">04:13:27</span></div><div class="scene-question"><span class="q-mark">?</span><span>“我把杯子放在哪里了？”</span></div></div><div class="note"><span class="note-line"></span><p>数据通常以完整视频 + clip 相对时间戳组织；原始视频需要从 Ego4D、GoalStep、HD-EPIC 分别申请访问，ReFocus 主要发布新增反馈标注与特征。</p></div></div></section>
+
+    <section class="section reveal" id="annotation"><div class="section-heading"><div><p class="eyebrow">02 · ANNOTATION</p><h2>标注不是一句答案，而是一轮纠错记录。</h2></div><p>每一条反馈都指向模型之前的一次错误预测，让“用户如何把模型拉回正确片段”变成可训练、可复现的数据。</p></div><div class="annotation-grid"><div class="json-card"><div class="code-top"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="code-file">sample.jsonl</span></div><pre><code><span class="brace">{</span>
+  <span class="key">"query"</span>: <span class="string">"我在客厅和谁说话？"</span>,
+  <span class="key">"feedback"</span>: <span class="string">"那个人正在弹吉他，不只是走过。"</span>,
+  <span class="key">"pred_timestamp"</span>: <span class="array">[434.25, 443.97]</span>,
+  <span class="key">"timestamps"</span>: <span class="array">[109.08, 125.61]</span>,
+  <span class="key">"duration"</span>: <span class="number">480.0</span>
+<span class="brace">}</span></code></pre></div><div class="annotation-types"><article><span class="type-index">A</span><h3>内容补充</h3><p>“不是白色杯子，是蓝色大杯子。”</p></article><article><span class="type-index">B</span><h3>排除干扰</h3><p>“不是电视旁边，是植物附近。”</p></article><article><span class="type-index">C</span><h3>时间提示</h3><p>“请看前面，发生在挂旗出现之前。”</p></article></div></div></section>
+
+    <section class="section reveal" id="benchmark"><div class="section-heading"><div><p class="eyebrow">03 · BENCHMARK</p><h2>三套来源数据，一个新的交互任务。</h2></div><p>EM-QnF 建立在已有 episodic memory benchmark 之上，把一次性 NLQ 扩展成可以多轮纠正的检索。</p></div><div class="benchmark-layout"><div class="benchmark-table-wrap"><table><thead><tr><th>数据集</th><th>Train</th><th>Val</th><th>Test</th><th>角色</th></tr></thead><tbody><tr><td><strong>Ego4D-NLQ</strong><small>ego4d_qnf</small></td><td>✓</td><td>✓</td><td>未提供</td><td>大规模第一视角记忆</td></tr><tr><td><strong>GoalStep</strong><small>goalstep_qnf</small></td><td>✓</td><td>✓</td><td>✓</td><td>目标驱动步骤理解</td></tr><tr><td><strong>HD-EPIC</strong><small>hd_epic_qnf</small></td><td>✓</td><td>✓</td><td>✓</td><td>高分辨率日常活动</td></tr></tbody></table></div><div class="metric-panel"><p class="metric-kicker">WHAT COUNTS AS CORRECT?</p><div class="metric"><strong>R@K</strong><span>前 K 个候选里是否命中正确片段</span></div><div class="metric"><strong>IoU</strong><span>预测区间与真实区间的重叠比例</span></div><div class="metric-tags"><span>IoU ≥ 0.3</span><span>IoU ≥ 0.5</span></div></div></div></section>
+
+    <section class="section reveal" id="leaderboard"><div class="leaderboard-banner"><div><p class="eyebrow">04 · LEADERBOARD</p><h2>目前更像“可复现实验”，还不是公开榜单。</h2><p>项目仓库提供 checkpoint、评测脚本和固定 split 的结果表，但目前没有看到独立在线 leaderboard。比较不同方法时，应保持相同测试集和 R@K / IoU 定义。</p></div><div class="result-card"><span>Released checkpoint</span><strong>GoalStep · Test</strong><div class="result-row"><span>R@1 · IoU@0.3</span><b>26.77</b></div><div class="result-row"><span>R@5 · IoU@0.5</span><b>46.07</b></div><small>来源：项目 GitHub README</small></div></div></section>
+
+    <section class="section pipeline-section reveal" id="pipeline"><div class="section-heading"><div><p class="eyebrow">05 · PIPELINE</p><h2>从原始视频到反馈对齐。</h2></div><p>数据生成和模型推理是两条相互衔接的链路：先把已有 NLQ 变成 EM-QnF，再用 FALM 把反馈转成片段级权重。</p></div><div class="pipeline"><div class="pipeline-line"></div><article class="step"><span class="step-no">01</span><div><h3>原始数据</h3><p>Ego4D-NLQ / GoalStep / HD-EPIC 提供视频、问题和真实时间段。</p><code>video + query + ground truth span</code></div></article><article class="step"><span class="step-no">02</span><div><h3>构造反馈</h3><p>采样参考片段，用 LVLM 生成描述，再由 LLM 生成内容、排除和时间反馈。</p><code>query + wrong prediction + feedback</code></div></article><article class="step"><span class="step-no">03</span><div><h3>FALM 对齐</h3><p>编码视频、问题和反馈，计算每个 clip 的 alignment score，重加权原模型特征。</p><code>clip score P → EM Adapter</code></div></article><article class="step"><span class="step-no">04</span><div><h3>评测反馈后的定位</h3><p>输出新的时间段，用 Recall@K 和 IoU 衡量是否找回正确事件。</p><code>prediction → R@K / IoU</code></div></article></div></section>
+
+    <section class="closing reveal"><p class="eyebrow">THE TAKEAWAY</p><h2>它把“模型答错后怎么纠正”<br />变成了 benchmark。</h2><div class="closing-links"><a href="https://arxiv.org/abs/2604.24893" target="_blank" rel="noreferrer">阅读论文 ↗</a><a href="https://huggingface.co/datasets/nsubedi123/EM-QnF" target="_blank" rel="noreferrer">查看数据集 ↗</a><a href="https://github.com/nsubedi11/CVPR26_ReFocus" target="_blank" rel="noreferrer">复现实验 ↗</a></div></section>
+  </main>
+  <footer><span>ReFocus / EM-QnF 研究速览</span><span>资料整理自论文项目页、GitHub README 与 Hugging Face 数据集卡片</span></footer>
+  <script src="script.js"></script>
+</body>
+</html>
